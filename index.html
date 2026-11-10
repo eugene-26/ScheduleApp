@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>スケジュール管理 - 予定・実績・集計・設定</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased font-sans select-none min-h-screen flex flex-col">
+
+  <!-- ===============================
+       1. グローバルヘッダー
+       =============================== -->
+  <header class="bg-white border-b border-slate-200 px-4 md:px-6 py-2.5 flex flex-wrap items-center justify-between gap-2 sticky top-0 z-40 shadow-xs">
+    <div class="flex flex-wrap items-center gap-3 md:gap-6">
+      <div class="flex items-center space-x-2">
+        <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-base shadow-xs shrink-0">
+          S
+        </div>
+        <div>
+          <h1 class="text-sm font-bold text-slate-900 leading-tight">SmartSchedule</h1>
+          <p id="headerSubtitle" class="text-3xs md:text-2xs text-slate-400">2 実績</p>
+        </div>
+      </div>
+
+      <!-- メイン画面タブ（画面1〜4） -->
+      <nav class="flex flex-wrap items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs">
+        <button id="navScreen1Btn" onclick="switchScreen('screen1')" class="px-3 py-1.5 rounded-md font-semibold bg-white text-blue-700 shadow-2xs border border-slate-200 flex items-center space-x-1.5 transition whitespace-nowrap">
+          <span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+          <span>1 予定</span>
+        </button>
+        <button id="navScreen2Btn" onclick="switchScreen('screen2')" class="px-3 py-1.5 rounded-md font-medium text-slate-600 hover:text-slate-900 transition flex items-center space-x-1.5 whitespace-nowrap">
+          <span class="w-1.5 h-1.5 rounded-full bg-transparent"></span>
+          <span>2 実績</span>
+        </button>
+        <button id="navScreen3Btn" onclick="switchScreen('screen3')" class="px-3 py-1.5 rounded-md font-medium text-slate-600 hover:text-slate-900 transition flex items-center space-x-1.5 whitespace-nowrap">
+          <span class="w-1.5 h-1.5 rounded-full bg-transparent"></span>
+          <span>3 集計</span>
+        </button>
+        <button id="navScreen4Btn" onclick="switchScreen('screen4')" class="px-3 py-1.5 rounded-md font-medium text-slate-600 hover:text-slate-900 transition flex items-center space-x-1.5 whitespace-nowrap">
+          <span class="w-1.5 h-1.5 rounded-full bg-transparent"></span>
+          <span>設定</span>
+        </button>
+      </nav>
+    </div>
+
+    <!-- 右側アクション: 画面シミュレーション切替 ＆ クリップボード -->
+    <div class="flex items-center space-x-2 text-xs">
+      <!-- クリップボード通知 -->
+      <div id="clipboardNotice" class="hidden items-center space-x-1 bg-amber-50 text-amber-800 border border-amber-200 px-2 py-0.5 rounded text-2xs">
+        <span>📋 コピー中: <strong id="clipboardTitle"></strong></span>
+        <button onclick="clearClipboard()" class="text-amber-500 hover:text-amber-700 font-bold ml-1">&times;</button>
+      </div>
+
+      <!-- PC上でスマホ表示を確認できるシミュレーターボタン -->
+      <button onclick="toggleDeviceSimulation()" id="simBtn" class="px-2.5 py-1 rounded border border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-700 text-2xs font-semibold flex items-center space-x-1 transition shadow-2xs">
+        <span id="simIcon">📱</span>
+        <span id="simText">スマホ表示で確認</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ===============================
+       2. サブツールバー
+       =============================== -->
+  <div class="bg-white border-b border-slate-200 px-4 md:px-6 py-2 flex flex-wrap items-center justify-between gap-2 sticky top-[53px] z-30 shadow-2xs">
+
+    <!-- === 画面1専用ツールバー === -->
+    <div id="toolbarScreen1" class="flex flex-wrap items-center justify-between w-full gap-2">
+      <div class="flex items-center space-x-3">
+        <!-- スマホ：曜日ズーム時の「戻る」ボタン -->
+        <div id="mobileBackWrap" class="hidden items-center space-x-2">
+          <button onclick="exitMobileZoom()" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded border border-slate-300 text-xs font-semibold flex items-center space-x-1">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+            <span>週間全体に戻る</span>
+          </button>
+          <span id="mobileCurrentDayLabel" class="text-xs font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">月曜日を編集中</span>
+        </div>
+
+        <div id="desktopViewTabs" class="inline-flex items-center gap-2">
+          <div class="inline-flex rounded-md border border-slate-300 p-0.5 bg-slate-50">
+            <button id="viewWeekBtn" onclick="switchView('week')" class="px-3 py-1 text-xs font-semibold rounded text-white bg-blue-600 transition shadow-2xs">
+              週間タイムテーブル
+            </button>
+            <button id="viewDayBtn" onclick="switchView('day')" class="px-3 py-1 text-xs font-medium rounded text-slate-600 hover:text-slate-900 transition">
+              単日プリセット
+            </button>
+          </div>
+        </div>
+      </div>
+      <div id="toolbarScreen1Fx" class="min-w-0 flex-1 flex justify-end"></div>
+    </div>
+
+    <!-- === 画面2専用ツールバー (実績・日付ナビ・予実アクション) === -->
+    <div id="toolbarScreen2" class="hidden flex-wrap items-center justify-between w-full gap-2">
+      <!-- 左側: 日付ナビゲーション（画面2は特定日付を管理！） -->
+      <div class="flex items-center space-x-3">
+        <div class="inline-flex items-center gap-2">
+          <div class="inline-flex rounded-md border border-slate-300 p-0.5 bg-slate-50">
+            <button id="screen2DayViewBtn" onclick="switchScreen2View('day')" class="px-3 py-1 text-xs font-medium rounded text-slate-600 hover:text-slate-900 transition">
+              日入力
+            </button>
+            <button id="screen2WeekViewBtn" onclick="switchScreen2View('week')" class="px-3 py-1 text-xs font-semibold rounded text-white bg-blue-600 transition shadow-2xs">
+              週記録
+            </button>
+          </div>
+        </div>
+
+        <div class="h-4 w-px bg-slate-200"></div>
+
+        <!-- 日付ナビゲーション -->
+        <div class="flex items-center space-x-1.5">
+          <button onclick="navigateActualDate(-1)" class="p-1 rounded hover:bg-slate-100 border border-slate-200 text-slate-600 hover:text-slate-900" title="前日へ">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+          </button>
+          <button onclick="goToActualToday()" class="px-2.5 py-0.5 text-xs font-medium border border-slate-200 rounded hover:bg-slate-100 text-slate-700">
+            今日
+          </button>
+          <button onclick="navigateActualDate(1)" class="p-1 rounded hover:bg-slate-100 border border-slate-200 text-slate-600 hover:text-slate-900" title="翌日へ">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+          </button>
+          <span id="actualDateLabel" class="text-xs font-bold text-slate-800 ml-1">2026年11月06日 (金)</span>
+        </div>
+
+        <div class="h-4 w-px bg-slate-200"></div>
+        <div class="flex items-center space-x-1 bg-slate-50 px-2 py-0.5 rounded border border-slate-200 text-slate-600 text-2xs">
+          <span class="text-slate-400">刻み:</span>
+          <select id="screen2TimeStepSelect" onchange="changeTimeStep(this.value)" class="bg-white border border-slate-200 rounded px-1 py-0.5 font-semibold focus:outline-none">
+            <option value="15">15分</option>
+            <option value="20">20分</option>
+            <option value="30" selected>30分</option>
+            <option value="60">60分</option>
+          </select>
+        </div>
+      </div>
+      <div id="toolbarScreen2Fx" class="min-w-0 flex-1 flex justify-end"></div>
+    </div>
+
+    <!-- === 画面3専用ツールバー === -->
+    <div id="toolbarScreen3" class="hidden flex-wrap items-center justify-between w-full gap-2">
+      <div class="inline-flex rounded-md border border-slate-300 p-0.5 bg-slate-50">
+        <button id="screen3SummaryBtn" type="button" onclick="switchScreen3View('summary')" class="px-3 py-1 text-xs font-semibold rounded text-white bg-blue-600 transition shadow-2xs">
+          集計
+        </button>
+        <button id="screen3NotesBtn" type="button" onclick="switchScreen3View('notes')" class="px-3 py-1 text-xs font-medium rounded text-slate-600 hover:text-slate-900 transition">
+          メモ
+        </button>
+      </div>
+    </div>
+
+    <div id="toolbarScreen4" class="hidden flex-wrap items-center justify-between w-full gap-2">
+      <div class="text-xs font-bold text-slate-700">データのバックアップ</div>
+    </div>
+
+  </div>
+
+  <!-- ===============================
+       3. メインタイムライングリッドエリア
+       =============================== -->
+  <main class="flex-1 p-3 md:p-5 overflow-y-auto flex justify-center" id="mainScrollArea">
+    <div id="appContainer" class="w-full max-w-7xl bg-white rounded-lg border border-slate-300 shadow-xs overflow-hidden flex flex-col transition-all duration-200">
+
+      <div id="fxPark" class="hidden">
+        <div id="fxCluster" class="flex items-center gap-2 min-w-0 max-w-xl text-xs text-slate-600">
+          <span class="font-bold text-slate-400 shrink-0">fx</span>
+          <span id="formulaBar" class="truncate"></span>
+          <span class="text-2xs text-slate-400 shrink-0 hidden sm:block" id="fxRightNotice">2 実績</span>
+        </div>
+      </div>
+
+      <!-- グリッド表示コンテナ -->
+      <div class="relative overflow-x-auto min-h-[520px] select-none" id="gridContainer">
+        <!-- JSで動的レンダリング -->
+      </div>
+
+      <!-- 画面2: 1日予実対比用 メモ・簡易日記エリア -->
+      <div id="dailyNoteSection" class="border-t border-slate-300 bg-slate-50/70 p-3.5 md:p-4 transition-all hidden">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center space-x-2">
+            <span class="text-sm">📝</span>
+            <h3 class="text-xs font-bold text-slate-800">1日のメモ・簡易日記</h3>
+            <span class="text-3xs text-slate-500 font-medium" id="dailyNoteDateBadge">2026年11月06日 (金)</span>
+          </div>
+          <div class="flex items-center space-x-2">
+            <span id="dailyNoteStatus" class="text-3xs text-slate-400">自動保存済み</span>
+            <button onclick="toggleDailyNoteCollapse()" class="text-slate-500 hover:text-slate-800 text-3xs font-semibold px-2 py-0.5 rounded border border-slate-200 bg-white hover:bg-slate-50 transition shadow-2xs">
+              <span id="dailyNoteToggleText">折りたたむ</span>
+            </button>
+          </div>
+        </div>
+        <div id="dailyNoteBody" class="transition-all duration-200">
+          <textarea id="dailyNoteTextarea"
+                    oninput="handleDailyNoteInput(this.value)"
+                    rows="3"
+                    placeholder="今日の振り返り、気づき、体調、業務の進捗メモや日記を自由に入力できます..."
+                    class="w-full border border-slate-300 rounded-lg p-2.5 text-xs text-slate-800 bg-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 shadow-2xs font-sans leading-relaxed resize-y"></textarea>
+        </div>
+      </div>
+
+      <!-- ステータスバー（フッター） -->
+      <div class="bg-slate-50 border-t border-slate-200 px-3 md:px-4 py-1.5 text-xs text-slate-500 flex justify-between items-center">
+        <div class="flex items-center space-x-3 md:space-x-4 text-2xs md:text-xs">
+          <span class="inline-flex items-center space-x-1">
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <span id="footerStatusText">準備完了</span>
+          </span>
+          <span id="footerStat1">登録: <strong id="scheduleCount" class="text-slate-700">0件</strong></span>
+          <span id="footerStat2">合計時間: <strong id="scheduleTotalHours" class="text-slate-700">0.0h</strong></span>
+        </div>
+        <div class="text-3xs md:text-2xs text-slate-400" id="footerRightInfo">
+          自動保存中
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ===============================
+       4. ミニウィンドウ (予定・実績入力用)
+       =============================== -->
+  <div id="miniWindow" class="fixed z-50 bg-white rounded-lg shadow-xl border border-slate-200 p-3.5 w-76 mini-popover hidden">
+    <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
+      <div class="flex items-center space-x-1.5">
+        <div id="miniColorIndicator" class="w-3 h-3 rounded-full bg-slate-300 border border-slate-400"></div>
+        <span id="miniWindowTitle" class="text-xs font-bold text-slate-800">予定を追加</span>
+      </div>
+      <button onclick="closeMiniWindow()" class="text-slate-400 hover:text-slate-600 text-sm font-bold leading-none">&times;</button>
+    </div>
+
+    <form id="miniForm" onsubmit="saveFromMiniWindow(event)" class="space-y-2.5 text-xs">
+      <input type="hidden" id="miniScheduleId" value="">
+      <input type="hidden" id="miniTargetCol" value=""> <!-- 'plan' | 'actual' -->
+      <input type="hidden" id="miniDayKey" value="mon">
+
+      <div id="miniDayIndicatorWrap" class="flex items-center justify-between bg-slate-50 px-2 py-1 rounded border border-slate-200 text-2xs">
+        <span class="text-slate-400">対象:</span>
+        <span id="miniDayLabel" class="font-bold text-blue-600">月曜日</span>
+      </div>
+
+      <div>
+        <input type="text" id="miniTitle" required placeholder="項目名を入力 (例: ミーティング、運動)"
+               class="w-full border border-slate-300 rounded px-2.5 py-1.5 text-xs font-medium focus:ring-1 focus:ring-blue-500 focus:outline-none">
+      </div>
+
+      <div>
+        <div class="flex items-center space-x-1.5 text-slate-600">
+          <div class="flex-1">
+            <label for="miniStartInput" class="block text-3xs text-slate-400 mb-0.5 font-medium">開始</label>
+            <input type="text" id="miniStartInput" inputmode="numeric" placeholder="9:30" autocomplete="off"
+                   onblur="normalizeMiniTimeField(this)"
+                   class="w-full border border-slate-300 rounded px-1.5 py-1 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-blue-500">
+          </div>
+          <span class="text-slate-400 pt-3">〜</span>
+          <div class="flex-1">
+            <label for="miniEndInput" class="block text-3xs text-slate-400 mb-0.5 font-medium">終了</label>
+            <input type="text" id="miniEndInput" inputmode="numeric" placeholder="10:00" autocomplete="off"
+                   onblur="normalizeMiniTimeField(this)"
+                   class="w-full border border-slate-300 rounded px-1.5 py-1 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-blue-500">
+          </div>
+        </div>
+        <p class="mt-1 text-3xs text-slate-400">1分単位。9:30 または 0930</p>
+      </div>
+
+      <div>
+        <label class="block text-2xs font-semibold text-slate-500 mb-1">カラータグ（色＝集計識別）</label>
+        <div class="flex flex-wrap items-center gap-1.5">
+          <div class="flex flex-wrap items-center gap-1.5" id="miniColorPalette"></div>
+          <button type="button" onclick="openColorTagCreator()" class="w-5 h-5 rounded-full border border-dashed border-slate-400 text-slate-500 hover:border-blue-500 hover:text-blue-600 text-sm leading-none flex items-center justify-center shrink-0" title="カラータグを追加">＋</button>
+        </div>
+        <div id="colorTagCreator" class="hidden mt-2 p-2 border border-slate-200 rounded bg-slate-50 space-y-2">
+          <p class="text-2xs font-semibold text-slate-600">色を選んでタグ名を付けます</p>
+          <div id="colorPresetPalette" class="grid grid-cols-10 gap-1"></div>
+          <input type="text" id="colorTagNameInput" placeholder="タグ名（例: 副業、家事）" class="w-full border border-slate-300 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none">
+          <div class="flex justify-end gap-1">
+            <button type="button" onclick="closeColorTagCreator()" class="px-2 py-1 border border-slate-200 rounded text-2xs text-slate-500 hover:bg-white">キャンセル</button>
+            <button type="button" onclick="saveNewColorTag()" class="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-2xs font-semibold">保存</button>
+          </div>
+        </div>
+        <input type="hidden" id="miniColorInput" value="blue">
+      </div>
+
+      <div>
+        <input type="text" id="miniMemo" placeholder="詳細メモ（任意）"
+               class="w-full border border-slate-200 rounded px-2.5 py-1 text-2xs text-slate-600 focus:ring-1 focus:ring-blue-500 focus:outline-none">
+      </div>
+
+      <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
+        <div class="flex items-center space-x-1" id="miniActionButtons">
+          <button type="button" id="miniDeleteBtn" onclick="deleteFromMiniWindow()" class="text-rose-600 hover:text-rose-800 p-1 text-2xs font-semibold hidden" title="削除">
+            削除
+          </button>
+          <button type="button" id="miniCopyBtn" onclick="copyCurrentEvent()" class="text-slate-600 hover:text-slate-900 px-1.5 py-0.5 border border-slate-200 rounded text-2xs hidden" title="このブロックを複製">
+            📋 複製
+          </button>
+        </div>
+        <div class="flex items-center space-x-1.5 ml-auto">
+          <button type="button" onclick="closeMiniWindow()" class="px-2.5 py-1 border border-slate-200 rounded text-2xs text-slate-500 hover:bg-slate-50">
+            閉じる
+          </button>
+          <button type="submit" class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded text-2xs shadow-2xs">
+            保存
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- ===============================
+       5. 予定パターン管理モーダル
+       =============================== -->
+  <div id="patternManagerModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-2xs z-50 flex items-center justify-center hidden">
+    <div class="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden transform transition-all">
+      <div class="bg-slate-50 px-5 py-3.5 border-b border-slate-200 flex justify-between items-center">
+        <div class="flex items-center space-x-2">
+          <span class="text-base">📋</span>
+          <div>
+            <h3 class="text-sm font-bold text-slate-800">プリセット管理・編集</h3>
+            <p class="text-3xs text-slate-400">名前の変更と削除ができます</p>
+          </div>
+        </div>
+        <button onclick="closePatternManagerModal()" class="text-slate-400 hover:text-slate-600 text-lg font-bold leading-none">&times;</button>
+      </div>
+
+      <div class="p-5 max-h-[460px] overflow-y-auto space-y-3" id="patternManagerList"></div>
+
+      <div class="bg-slate-50 px-5 py-3 border-t border-slate-200 flex justify-end">
+        <button onclick="closePatternManagerModal()" class="px-4 py-1.5 bg-slate-800 hover:bg-slate-900 text-white font-semibold rounded text-xs transition">
+          完了
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="timeGridPark" class="hidden">
+    <div id="timeGridControls" class="flex items-center gap-2 text-xs">
+      <div class="flex items-center space-x-1 bg-slate-50 px-2 py-0.5 rounded border border-slate-200 text-slate-600 text-2xs">
+        <span id="timeGridLabel" class="text-slate-500">週間</span>
+        <span class="text-slate-400">時間:</span>
+        <select id="startHourSelect" onchange="changeTimeRange()" class="bg-white border border-slate-200 rounded px-1 py-0.5 font-mono focus:outline-none"></select>
+        <span>〜</span>
+        <select id="endHourSelect" onchange="changeTimeRange()" class="bg-white border border-slate-200 rounded px-1 py-0.5 font-mono focus:outline-none"></select>
+      </div>
+      <div class="flex items-center space-x-1 bg-slate-50 px-2 py-0.5 rounded border border-slate-200 text-slate-600 text-2xs">
+        <span class="text-slate-400">刻み:</span>
+        <select id="timeStepSelect" onchange="changeTimeStep(this.value)" class="bg-white border border-slate-200 rounded px-1 py-0.5 font-semibold focus:outline-none">
+          <option value="15">15分</option>
+          <option value="20">20分</option>
+          <option value="30" selected>30分</option>
+          <option value="60">60分</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div id="patternMenuPark" class="hidden">
+    <div class="relative inline-block text-left" id="patternDropdownWrap">
+      <button type="button" onclick="togglePatternMenu()" class="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold rounded border border-blue-200 transition flex items-center space-x-1 shadow-2xs text-2xs md:text-xs whitespace-nowrap">
+        <span>📦 プリセット管理</span>
+        <svg class="w-3 h-3 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+      </button>
+      <div id="patternDropdown" class="hidden mt-1 w-80 rounded-md shadow-xl bg-white ring-1 ring-black ring-opacity-5 py-1 text-xs">
+        <div class="py-1 max-h-72 overflow-y-auto" id="patternListContainer"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+  <input id="importFileInput" type="file" accept="application/json,.json" class="hidden" onchange="importAppDataFile(this)">
+</body>
+</html>

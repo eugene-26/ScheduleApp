@@ -1,0 +1,140 @@
+/* Excel風グリッドとカスタムスクロールバー */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f8fafc;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* エクセル風セル選択＆ドラッグ選択ハイライト */
+.excel-cell-dragging {
+  background-color: #dbeafe !important;
+  outline: 1px solid #3b82f6 !important;
+}
+.excel-cell-active {
+  outline: 2px solid #2563eb !important;
+  outline-offset: -2px;
+  position: relative;
+  z-index: 10;
+  background-color: #eff6ff !important;
+}
+
+/* 予定・実績ブロックのホバー */
+.schedule-item {
+  transition: box-shadow 0.12s ease, transform 0.12s ease;
+}
+.schedule-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px -1px rgba(0, 0, 0, 0.12);
+  z-index: 30 !important;
+}
+
+/* 画面切り替えトランジション */
+.screen-fade {
+  animation: fadeIn 0.15s ease-out;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(2px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ミニウィンドウのアニメーション */
+.mini-popover {
+  animation: popIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes popIn {
+  from { opacity: 0; transform: scale(0.96) translateY(-4px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+#miniWindow {
+  max-height: calc(100vh - 24px);
+  overflow-y: auto;
+}
+.preset-swatch.is-selected {
+  outline: 2px solid #0f172a;
+  outline-offset: 1px;
+}
+
+.month-color-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(15, 23, 42, 0.18);
+}
+
+/* 画面3: 予実メーター */
+.meter-track {
+  height: 8px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  overflow: hidden;
+}
+.meter-fill {
+  height: 100%;
+  border-radius: 999px;
+}
+.meter-fill.is-plan {
+  opacity: 0.4;
+}
+
+/* 画面3: メモ日記（便箋） */
+.diary-sheet {
+  max-width: 48rem;
+  margin: 0 auto;
+  background: #fbf6ea;
+  border: 1px solid #e6d7b8;
+  border-radius: 6px;
+  padding: 1.15rem 1.4rem 1.25rem;
+  box-shadow: 0 1px 2px rgba(90, 60, 20, 0.06);
+  font-family: "Hiragino Maru Gothic ProN", "Hiragino Maru Gothic Pro", "ヒラギノ丸ゴ ProN", "ヒラギノ丸ゴ Pro", "HG丸ゴシックM-PRO", "HG丸ｺﾞｼｯｸM-PRO", sans-serif;
+  color: #3f3426;
+}
+.diary-hint {
+  margin: 0 0 0.35rem;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: #8a7356;
+}
+.diary-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.9rem;
+  min-width: 0;
+  padding: 0.42rem 0;
+  border-bottom: 1px solid #e7d8bc;
+  font-size: 15px;
+  line-height: 1.75;
+}
+.diary-row:last-child {
+  border-bottom: none;
+}
+.diary-date {
+  flex: 0 0 6.6rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: 700;
+  line-height: inherit;
+  text-align: left;
+  color: #1d4ed8;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.diary-text {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
